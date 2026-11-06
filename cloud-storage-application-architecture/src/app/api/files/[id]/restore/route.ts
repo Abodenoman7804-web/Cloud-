@@ -4,12 +4,13 @@ import { files, folders } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
+export const runtime = "edge";
+
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   const { id } = await params;
 
-  // جلب الملف لمعرفة مجلده الأصلي
   const [file] = await db
     .select({ id: files.id, folderId: files.folderId })
     .from(files)
@@ -17,7 +18,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     .limit(1);
   if (!file) return NextResponse.json({ error: "الملف غير موجود في السلة" }, { status: 404 });
 
-  // إن كان مجلده الأصلي حُذف ناعماً، نعيد الملف إلى الجذر كي لا يختفي
   let targetFolderId: string | null = file.folderId;
   if (targetFolderId) {
     const [folder] = await db

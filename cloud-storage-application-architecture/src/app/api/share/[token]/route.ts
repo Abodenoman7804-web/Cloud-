@@ -4,7 +4,8 @@ import { shareLinks, files } from "@/db/schema";
 import { getAuthUser, presignPath } from "@/lib/server/guard";
 import { and, eq, sql } from "drizzle-orm";
 
-/** معلومات عامة عن الرابط + رابط تنزيل موقّع (لا يكشف مفتاح التشفير أبداً) */
+export const runtime = "edge";
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
@@ -43,7 +44,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
   });
 }
 
-/** إلغاء رابط المشاركة (للمالك فقط) */
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });

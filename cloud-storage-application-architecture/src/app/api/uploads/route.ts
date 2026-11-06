@@ -6,15 +6,11 @@ import { ensureStorageRoots, writeThumb } from "@/lib/server/storage";
 import { sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
-const MAX_FILE = 1099511627776; // 1 TB
-const MAX_THUMB_B64 = 80_000; // ~60KB
+export const runtime = "edge";
 
-/**
- * بدء جلسة رفع مجزأ:
- * 1) التحقق من الحصة ذرّياً بحجز المساحة (Atomic Reservation)
- * 2) إنشاء جلسة الرفع وإرجاع معرفها
- * لا تمر البايتات هنا إطلاقاً — الرفع مباشر إلى التخزين عبر روابط موقعة.
- */
+const MAX_FILE = 1099511627776;
+const MAX_THUMB_B64 = 80_000;
+
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
@@ -37,15 +33,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (folderId) {
-      const [dest] = await db
-        .select({ id: folders.id })
-        .from(folders)
-        .where(sql`${folders.id} = ${folderId} AND ${folders.userId} = ${user.id} AND ${folders.deletedAt} IS NULL`)
-        .limit(1);
+      const [dest] = await db.select({ id: folders.id }).from(folders).where(sql`${folders.id} = ${folderId} AND ${folders.userId} = ${user.id} AND ${folders.deletedAt} IS NULL`).limit(1);
       if (!dest) return NextResponse.json({ error: "المجلد غير موجود" }, { status: 404 });
     }
 
-    // حجز الحصة ذرّياً — يفشل إن كانت المساحة غير كافية
     const reserved = await db.execute(sql`
       UPDATE users
       SET storage_used_bytes = storage_used_bytes + ${fileSizeBytes}
@@ -54,10 +45,7 @@ export async function POST(req: NextRequest) {
       RETURNING storage_used_bytes
     `);
     if (!reserved.rowCount) {
-      return NextResponse.json(
-        { error: "المساحة غير كافية. خطتك 1 تيرابايت — احذف ملفات أو فرّغ السلة.", code: "QUOTA_EXCEEDED" },
-        { status: 413 }
-      );
+      return NextResponse.json({ error: "المساحة غير كافية. خطتك 1 تيرابايت — احذف ملفات أو فرّغ السلة.", code: "QUOTA_EXCEEDED" }, { status: 413 });
     }
 
     await ensureStorageRoots();
@@ -77,20 +65,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const [session] = await db
-      .insert(uploadSessions)
-      .values({
-        userId: user.id,
-        folderId,
-        fileName,
-        mimeType,
-        fileSizeBytes,
-        totalChunks,
-        storageKey,
-        thumbnailKey,
-        status: "pending",
-      })
-      .returning({ id: uploadSessions.id });
+    const [session] = await db.insert(uploadSessions).values({ userId: user.id, folderId, fileName, mimeType, fileSizeBytes, totalChunks, storageKey, thumbnailKey, status: "pending" }).returning({ id: uploadSessions.id });
 
     return NextResponse.json({ sessionId: session.id }, { status: 201 });
   } catch (err) {

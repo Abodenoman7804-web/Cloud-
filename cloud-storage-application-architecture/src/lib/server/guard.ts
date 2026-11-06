@@ -10,8 +10,8 @@ const SECRET = process.env.APP_SECRET || "sahaab-dev-secret-change-me-in-product
 
 export const ACCESS_COOKIE = "sa_access";
 export const REFRESH_COOKIE = "sa_refresh";
-export const ACCESS_TTL = 15 * 60; // 15 دقيقة
-export const REFRESH_TTL = 30 * 24 * 60 * 60; // 30 يوم
+export const ACCESS_TTL = 15 * 60;
+export const REFRESH_TTL = 30 * 24 * 60 * 60;
 export const ONE_TB = 1099511627776;
 
 const jwtSecret = () => encoder.encode(SECRET);
@@ -28,7 +28,6 @@ export function safeCompare(a: string, b: string) {
   return timingSafeEqual(ab, bb);
 }
 
-// ─── Pre-signed URL (نمط S3): توقيع HMAC-SHA256 مع انتهاء زمني ──────────────
 export function signStorageKey(key: string, expires: number) {
   return storageHmac(`v1.${key}.${expires}`);
 }
@@ -79,7 +78,6 @@ export async function clearSessionCookies() {
   store.delete(REFRESH_COOKIE);
 }
 
-/** التحقق من الجلسة مع تجديد تلقائي للـ Access Token عبر Refresh Token */
 export async function getAuthUser(): Promise<User | null> {
   const store = await cookies();
   const access = store.get(ACCESS_COOKIE)?.value;
@@ -91,7 +89,7 @@ export async function getAuthUser(): Promise<User | null> {
         if (user) return user;
       }
     } catch {
-      // منتهي أو غير صالح — نجرب الـ Refresh Token
+      // invalid/expired
     }
   }
 
@@ -110,7 +108,6 @@ export async function getAuthUser(): Promise<User | null> {
     return null;
   }
 
-  // تدوير الـ Refresh Token (Rotation)
   await db.delete(sessions).where(eq(sessions.id, row.session.id));
   await issueSessionCookies(row.user);
   return row.user;

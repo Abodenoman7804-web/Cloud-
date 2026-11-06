@@ -5,6 +5,8 @@ import { users, activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { eq } from "drizzle-orm";
 
+export const runtime = "edge";
+
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });

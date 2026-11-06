@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = "edge";
+
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -53,11 +55,9 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
 
     (async () => {
       try {
-        // 1) المفتاح يعيش في #fragment — لا يُرسل لأي خادم إطلاقاً
         const match = window.location.hash.match(/#k=([A-Za-z0-9_-]+)/);
         const fragmentKey = match?.[1] ?? null;
 
-        // 2) معلومات الملف من الخادم (لا تشمل المفتاح)
         const metaRes = await fetch(`/api/share/${token}`, { cache: "no-store" });
         const meta = await metaRes.json().catch(() => null);
         if (!metaRes.ok) {
@@ -69,11 +69,10 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
         if (!fragmentKey) {
           setState("ready");
           setDecrypting(false);
-          setError("الرابط ينقصه مفتاح الفك (#k=…) — اطلبه مرة أخرى من المُشارِك بصيغته الكاملة.");
+          setError("الرابط ينقصه مفتاح الفك (#k=…) — اطلبه مرة أخرى من المُشارِك بصيغ��ه الكاملة.");
           return;
         }
 
-        // 3) استيراد المفتاح وتنزيل الأجزاء وفك تشفيرها محلياً
         const stdB64 = fragmentKey.replace(/-/g, "+").replace(/_/g, "/");
         const key = await crypto.subtle.importKey("raw", b64ToBytes(stdB64) as BufferSource, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
         const buf = await (await fetch(meta.url)).arrayBuffer();
@@ -105,7 +104,6 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
 
   return (
     <div className="min-h-screen app-bg flex flex-col items-center justify-center px-4 py-12">
-      {/* الشعار */}
       <Link href="/" className="flex items-center gap-2.5 mb-8 group">
         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-violet-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
           <Cloud size={20} className="text-white fill-white/20" />
@@ -130,7 +128,6 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
           </div>
         ) : info ? (
           <>
-            {/* الترويسة */}
             <div className="px-6 pt-6 pb-4 border-b border-white/5 flex flex-wrap items-center gap-4">
               <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-violet-500/20 border border-cyan-400/20 flex items-center justify-center shrink-0">
                 <Icon size={26} className="text-cyan-300" strokeWidth={1.6} />
@@ -144,7 +141,6 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
               <span className="chip !text-emerald-300 !border-emerald-400/25 !bg-emerald-400/5"><ShieldCheck size={12} /> مشفّر E2E</span>
             </div>
 
-            {/* المعاينة */}
             <div className="p-5 min-h-64 flex items-center justify-center bg-black/30">
               {error ? (
                 <div className="text-center py-10 px-4">
@@ -170,7 +166,6 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
               )}
             </div>
 
-            {/* الأزرار */}
             <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-3 border-t border-white/5">
               {blobUrl ? (
                 <a href={blobUrl} download={info.fileName} className="btn-primary flex-1 justify-center">
@@ -189,9 +184,8 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
         ) : null}
       </div>
 
-      {/* ملاحظة الخصوصية */}
       <p className="text-[10px] text-[#59617f] mt-6 flex items-center gap-1.5 max-w-md text-center leading-6">
-        <Eye size={11} className="shrink-0" /> فُكّ هذا الملف بالكامل داخل متصفحك — كلمة المرور والمفتاح لم يغادرا جهاز المُرسِل ولا يصلان خوادمنا.
+        <Eye size={11} className="shrink-0" /> فُكّ هذا الملف بالكامل داخل متصفحك — كلمة المرور والمفتاح لم يغادرا جهاز المُرسِل.
       </p>
     </div>
   );

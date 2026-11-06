@@ -4,7 +4,8 @@ import { files } from "@/db/schema";
 import { getAuthUser, presignPath } from "@/lib/server/guard";
 import { and, eq } from "drizzle-orm";
 
-/** روابط موقّعة قصيرة العمر للملف والبصمة المصغرة (نمط Pre-signed GET) */
+export const runtime = "edge";
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });

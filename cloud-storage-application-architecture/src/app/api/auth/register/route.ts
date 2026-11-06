@@ -6,6 +6,8 @@ import { users, activities } from "@/db/schema";
 import { issueSessionCookies, publicUser } from "@/lib/server/guard";
 import { eq } from "drizzle-orm";
 
+export const runtime = "edge";
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -31,10 +33,7 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
     const encryptionSalt = randomBytes(16).toString("base64");
 
-    const [user] = await db
-      .insert(users)
-      .values({ name, email, passwordHash, encryptionSalt })
-      .returning();
+    const [user] = await db.insert(users).values({ name, email, passwordHash, encryptionSalt }).returning();
 
     await db.insert(activities).values({ userId: user.id, type: "signup", detail: "إنشاء الحساب" });
     await issueSessionCookies(user);

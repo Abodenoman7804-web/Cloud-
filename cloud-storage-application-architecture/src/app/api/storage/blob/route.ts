@@ -6,7 +6,8 @@ import { stat } from "fs/promises";
 import { Readable } from "stream";
 import { ReadableStream as WebReadableStream } from "stream/web";
 
-/** خدمة البايتات عبر رابط موقّع — مع دعم Range للبث التدريجي (Video Seeking) */
+export const runtime = "edge";
+
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key") ?? "";
   const exp = Number(req.nextUrl.searchParams.get("exp") ?? 0);
@@ -60,7 +61,6 @@ export async function GET(req: NextRequest) {
   });
 }
 
-// حذف الملف الموقّع عند الإزالة الدائمة عبر مسار آخر — غير مستخدم هنا
 export async function HEAD() {
   return new NextResponse(null, { status: 405 });
 }

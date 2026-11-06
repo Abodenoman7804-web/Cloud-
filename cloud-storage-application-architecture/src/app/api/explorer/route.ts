@@ -4,7 +4,8 @@ import { folders, files } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { and, eq, isNull, desc } from "drizzle-orm";
 
-/** محتوى مجلد + مسار التنقل (Breadcrumbs) */
+export const runtime = "edge";
+
 export async function GET(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
@@ -22,7 +23,6 @@ export async function GET(req: NextRequest) {
     folder = row;
   }
 
-  // مسار التنقل من الجذر إلى المجلد الحالي
   const breadcrumbs: { id: string; name: string }[] = [];
   let cursor = folder;
   const allUserFolders = await db
@@ -37,11 +37,7 @@ export async function GET(req: NextRequest) {
   }
 
   const subFolders = await db
-    .select({
-      id: folders.id,
-      name: folders.name,
-      createdAt: folders.createdAt,
-    })
+    .select({ id: folders.id, name: folders.name, createdAt: folders.createdAt })
     .from(folders)
     .where(
       folderId

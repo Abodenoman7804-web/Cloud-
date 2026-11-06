@@ -5,7 +5,8 @@ import { getAuthUser } from "@/lib/server/guard";
 import { and, eq } from "drizzle-orm";
 import { deleteBlob } from "@/lib/server/storage";
 
-/** حذف نهائي: إزالة البايتات من التخزين + استرداد الحصة ذرّياً */
+export const runtime = "edge";
+
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
@@ -21,10 +22,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   await deleteBlob(file.storageKey);
   await deleteBlob(file.thumbnailKey);
   await db.delete(files).where(eq(files.id, file.id));
-  await db
-    .update(users)
-    .set({ storageUsedBytes: Math.max(0, user.storageUsedBytes - file.fileSizeBytes) })
-    .where(eq(users.id, user.id));
+  await db.update(users).set({ storageUsedBytes: Math.max(0, user.storageUsedBytes - file.fileSizeBytes) }).where(eq(users.id, user.id));
   await db.insert(activities).values({ userId: user.id, type: "delete", detail: `حذف نهائي «${file.fileName}»` });
   return NextResponse.json({ ok: true });
 }

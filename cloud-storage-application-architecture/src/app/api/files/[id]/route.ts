@@ -4,7 +4,8 @@ import { files, folders, activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { and, eq, isNull } from "drizzle-orm";
 
-/** تحديث ملف: إعادة تسمية / تفضيل / نقل إلى مجلد */
+export const runtime = "edge";
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
@@ -42,7 +43,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true });
 }
 
-/** حذف ناعم (نقل إلى السلة) */
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });

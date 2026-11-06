@@ -5,6 +5,8 @@ import { users, activities } from "@/db/schema";
 import { issueSessionCookies, publicUser } from "@/lib/server/guard";
 import { eq } from "drizzle-orm";
 
+export const runtime = "edge";
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

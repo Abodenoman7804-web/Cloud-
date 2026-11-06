@@ -1,40 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, files, folders, activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { and, eq, isNull, isNotNull, desc, sql, gte } from "drizzle-orm";
 
-/** إحصائيات لوحة المعلومات: الحصة + التصنيفات + النشاط + الاتجاه الشهري */
+export const runtime = "edge";
+
 export async function GET() {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
 
   const [fresh] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
 
-  const [{ filesCount }] = await db
-    .select({ filesCount: sql<number>`count(*)::int` })
-    .from(files)
-    .where(and(eq(files.userId, user.id), isNull(files.trashedAt)));
+  const [{ filesCount }] = await db.select({ filesCount: sql<number>`count(*)::int` }).from(files).where(and(eq(files.userId, user.id), isNull(files.trashedAt)));
+  const [{ foldersCount }] = await db.select({ foldersCount: sql<number>`count(*)::int` }).from(folders).where(and(eq(folders.userId, user.id), isNull(folders.deletedAt)));
+  const [{ favoritesCount }] = await db.select({ favoritesCount: sql<number>`count(*)::int` }).from(files).where(and(eq(files.userId, user.id), isNull(files.trashedAt), eq(files.isFavorite, true)));
+  const [{ trashCount, trashBytes }] = await db.select({ trashCount: sql<number>`count(*)::int`, trashBytes: sql<number>`coalesce(sum(${files.fileSizeBytes}), 0)::bigint` }).from(files).where(and(eq(files.userId, user.id), isNotNull(files.trashedAt)));
 
-  const [{ foldersCount }] = await db
-    .select({ foldersCount: sql<number>`count(*)::int` })
-    .from(folders)
-    .where(and(eq(folders.userId, user.id), isNull(folders.deletedAt)));
-
-  const [{ favoritesCount }] = await db
-    .select({ favoritesCount: sql<number>`count(*)::int` })
-    .from(files)
-    .where(and(eq(files.userId, user.id), isNull(files.trashedAt), eq(files.isFavorite, true)));
-
-  const [{ trashCount, trashBytes }] = await db
-    .select({
-      trashCount: sql<number>`count(*)::int`,
-      trashBytes: sql<number>`coalesce(sum(${files.fileSizeBytes}), 0)::bigint`,
-    })
-    .from(files)
-    .where(and(eq(files.userId, user.id), isNotNull(files.trashedAt)));
-
-  // توزيع الحجم حسب التصنيف
   const categoryRows = await db.execute(sql`
     SELECT
       CASE
@@ -58,15 +40,11 @@ export async function GET() {
     categories[row.category] = { bytes: Number(row.bytes), count: Number(row.count) };
   }
 
-  // الاتجاه الشهري لآخر 6 أشهر
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
   sixMonthsAgo.setDate(1);
   sixMonthsAgo.setHours(0, 0, 0, 0);
-  const monthRows = await db
-    .select({ fileSizeBytes: files.fileSizeBytes, createdAt: files.createdAt })
-    .from(files)
-    .where(and(eq(files.userId, user.id), gte(files.createdAt, sixMonthsAgo)));
+  const monthRows = await db.select({ fileSizeBytes: files.fileSizeBytes, createdAt: files.createdAt }).from(files).where(and(eq(files.userId, user.id), gte(files.createdAt, sixMonthsAgo)));
 
   const trend: { month: string; bytes: number }[] = [];
   const fmt = new Intl.DateTimeFormat("ar", { month: "short" });
@@ -82,19 +60,8 @@ export async function GET() {
     if (idx >= 0 && idx < 6) trend[idx].bytes += row.fileSizeBytes;
   }
 
-  const recentActivity = await db
-    .select({ id: activities.id, type: activities.type, detail: activities.detail, createdAt: activities.createdAt })
-    .from(activities)
-    .where(eq(activities.userId, user.id))
-    .orderBy(desc(activities.createdAt))
-    .limit(9);
-
-  const largestFiles = await db
-    .select({ id: files.id, fileName: files.fileName, fileSizeBytes: files.fileSizeBytes, mimeType: files.mimeType })
-    .from(files)
-    .where(and(eq(files.userId, user.id), isNull(files.trashedAt)))
-    .orderBy(desc(files.fileSizeBytes))
-    .limit(5);
+  const recentActivity = await db.select({ id: activities.id, type: activities.type, detail: activities.detail, createdAt: activities.createdAt }).from(activities).where(eq(activities.userId, user.id)).orderBy(desc(activities.createdAt)).limit(9);
+  const largestFiles = await db.select({ id: files.id, fileName: files.fileName, fileSizeBytes: files.fileSizeBytes, mimeType: files.mimeType }).from(files).where(and(eq(files.userId, user.id), isNull(files.trashedAt))).orderBy(desc(files.fileSizeBytes)).limit(5);
 
   return NextResponse.json({
     storage: {

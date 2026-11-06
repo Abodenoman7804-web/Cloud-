@@ -5,10 +5,8 @@ import { users, activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { eq } from "drizzle-orm";
 
-/**
- * رمز PIN الشخصي: العميل يرسل sha256(pin) فقط — الخادم يخزّن bcrypt(hash).
- * الإجراءات: setup | verify | remove
- */
+export const runtime = "edge";
+
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
@@ -29,7 +27,6 @@ export async function POST(req: NextRequest) {
       if (!/^[a-f0-9]{64}$/.test(pinHash)) {
         return NextResponse.json({ error: "بصمة الرمز غير صالحة" }, { status: 400 });
       }
-      // للتغيير مطلوب الرمز القديم
       if (user.pinHash && body.currentPinHash) {
         const ok = await bcrypt.compare(String(body.currentPinHash), user.pinHash);
         if (!ok) return NextResponse.json({ error: "رمز PIN الحالي غير صحيح" }, { status: 400 });

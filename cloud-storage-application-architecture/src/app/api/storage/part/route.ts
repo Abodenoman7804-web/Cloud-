@@ -3,10 +3,11 @@ import { verifyStorageSignature } from "@/lib/server/guard";
 import { writePart, ensureStorageRoots } from "@/lib/server/storage";
 import { NextRequest } from "next/server";
 
-const KEY_RE = /^part\.([a-f0-9-]{36})\.(\d{1,6})$/i;
-const MAX_PART = 40 * 1024 * 1024; // 40MB سقف للجزء الواحد
+export const runtime = "edge";
 
-/** استقبال جزء مُوقّع ورفعه — هذا هو "تخزين S3" في هذه المعمارية */
+const KEY_RE = /^part\.([a-f0-9-]{36})\.(\d{1,6})$/i;
+const MAX_PART = 40 * 1024 * 1024;
+
 export async function PUT(req: NextRequest) {
   const url = req.nextUrl;
   const key = url.searchParams.get("key") ?? "";

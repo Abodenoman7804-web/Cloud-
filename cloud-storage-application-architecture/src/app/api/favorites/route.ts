@@ -4,7 +4,8 @@ import { files } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { and, eq, isNull, desc } from "drizzle-orm";
 
-/** الملفات المفضلة (غير المحذوفة) */
+export const runtime = "edge";
+
 export async function GET() {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
