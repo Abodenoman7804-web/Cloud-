@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 import { db } from "@/db";
 import { users, activities } from "@/db/schema";
 import { issueSessionCookies, publicUser } from "@/lib/server/guard";

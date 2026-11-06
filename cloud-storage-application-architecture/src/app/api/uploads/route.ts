@@ -4,7 +4,7 @@ import { uploadSessions, folders, activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { ensureStorageRoots, writeThumb } from "@/lib/server/storage";
 import { sql } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 const MAX_FILE = 1099511627776; // 1 TB
 const MAX_THUMB_B64 = 80_000; // ~60KB

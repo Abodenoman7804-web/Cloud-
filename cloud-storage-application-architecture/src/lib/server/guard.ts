@@ -1,10 +1,9 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual, createHash, randomBytes } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { sessions, users, type User } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { createHash, randomBytes } from "crypto";
 
 const encoder = new TextEncoder();
 const SECRET = process.env.APP_SECRET || "sahaab-dev-secret-change-me-in-production";

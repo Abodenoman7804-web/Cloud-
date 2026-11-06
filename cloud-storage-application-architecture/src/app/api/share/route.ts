@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { shareLinks, files, activities } from "@/db/schema";
 import { getAuthUser } from "@/lib/server/guard";
 import { and, eq, isNull } from "drizzle-orm";
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 
 /** إنشاء رابط مشاركة منتهٍ — المفتاح يبقى خارج الخادم (في #fragment) */
 export async function POST(req: NextRequest) {
